@@ -17,8 +17,6 @@ use regex::Regex;
 
 #[cfg(feature = "std")]
 static REG_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"r\d{1,2}").unwrap());
-#[cfg(feature = "std")]
-static SPACE_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"\s+").unwrap());
 
 #[derive(Debug)]
 pub enum RegParseError {
@@ -524,17 +522,15 @@ impl fmt::Display for Instruction {
     }
 }
 
-#[cfg(feature = "std")]
 impl fmt::Debug for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", SPACE_RE.replace_all(&self.to_string(), " "))
-    }
-}
-
-#[cfg(not(feature = "std"))]
-impl fmt::Debug for Instruction {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", &self.to_string())
+        let s = self.to_string();
+        for c in s.chars() {
+            if !c.is_whitespace() {
+                write!(f, "{}", c)?;
+            }
+        }
+        Ok(())
     }
 }
 
