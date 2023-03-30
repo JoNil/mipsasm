@@ -1,5 +1,8 @@
 use crate::ast;
 
+#[cfg(not(feature = "std"))]
+use alloc::{vec, vec::Vec};
+
 type R = ast::Register;
 
 #[rustfmt::skip]

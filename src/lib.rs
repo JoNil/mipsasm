@@ -27,20 +27,43 @@
 //! # }
 //! ```
 
-mod assembler;
+#![cfg_attr(not(feature = "std"), no_std)]
+
 mod ast;
 mod disassembler;
 mod error;
+
+#[cfg(feature = "std")]
+mod assembler;
+
+#[cfg(feature = "std")]
 mod parser;
 
 pub use error::ParserError;
 
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+
+#[cfg(feature = "std")]
 use std::collections::HashMap;
+
+#[cfg(not(feature = "std"))]
+use core::marker::PhantomData;
+
+#[cfg(not(feature = "std"))]
+use alloc::{
+    format,
+    string::{String, ToString},
+    vec::Vec,
+};
 
 /// An instance of the assembler/disassembler
 pub struct Mipsasm<'a> {
     base_addr: u32,
+    #[cfg(feature = "std")]
     syms: HashMap<&'a str, u32>,
+    #[cfg(not(feature = "std"))]
+    _marker: PhantomData<&'a str>,
     debug: bool,
 }
 
@@ -57,7 +80,10 @@ impl<'a> Mipsasm<'a> {
     pub fn new() -> Mipsasm<'a> {
         Mipsasm {
             base_addr: 0,
+            #[cfg(feature = "std")]
             syms: HashMap::new(),
+            #[cfg(not(feature = "std"))]
+            _marker: PhantomData,
             debug: false,
         }
     }
@@ -88,6 +114,7 @@ impl<'a> Mipsasm<'a> {
     /// let mut mipsasm = Mipsasm::new();
     /// mipsasm.symbols(HashMap::from_iter(vec![("foo", 0x8000_0000)]));
     /// ```
+    #[cfg(feature = "std")]
     pub fn symbols(&mut self, syms: HashMap<&'a str, u32>) -> &mut Mipsasm<'a> {
         self.syms = syms;
         self
@@ -123,6 +150,7 @@ impl<'a> Mipsasm<'a> {
     ///   addi $t0, $t1, 0x1234
     /// ");
     /// ```
+    #[cfg(feature = "std")]
     pub fn assemble(&self, input: &str) -> Result<Vec<u32>, Vec<ParserError>> {
         let mut parser = parser::Parser::new(input, self.base_addr, &self.syms);
         Ok(assembler::assemble(parser.parse()?))
@@ -141,6 +169,7 @@ impl<'a> Mipsasm<'a> {
     /// ```
     pub fn disassemble(&self, input: &[u32]) -> Vec<String> {
         let mut x = disassembler::disassemble(input.to_vec());
+        #[cfg(feature = "std")]
         self.match_syms(&mut x);
         if self.debug {
             x.iter()
@@ -152,6 +181,7 @@ impl<'a> Mipsasm<'a> {
     }
 
     // Iterates over a vector of instructions and replaces any value with a defined symbol with the actual symbol string.
+    #[cfg(feature = "std")]
     fn match_syms(&self, insts: &mut Vec<ast::Instruction>) {
         for i in insts {
             if let ast::Instruction::Jump {

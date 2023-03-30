@@ -1,17 +1,27 @@
-use regex::Regex;
-use once_cell::sync::Lazy;
-use std::convert::{From, TryFrom};
-use std::fmt;
-use std::str::FromStr;
+use core::convert::{From, TryFrom};
+use core::fmt;
+use core::str::FromStr;
 use strum_macros::{Display, EnumString};
-use thiserror::Error;
 
+#[cfg(not(feature = "std"))]
+use alloc::{
+    format,
+    string::{String, ToString},
+};
+
+#[cfg(feature = "std")]
+use once_cell::sync::Lazy;
+
+#[cfg(feature = "std")]
+use regex::Regex;
+
+#[cfg(feature = "std")]
 static REG_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"r\d{1,2}").unwrap());
+#[cfg(feature = "std")]
 static SPACE_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"\s+").unwrap());
 
-#[derive(Error, Debug)]
+#[derive(Debug)]
 pub enum RegParseError {
-    #[error("invalid register `{0}`")]
     RegParseError(String),
 }
 
@@ -514,9 +524,17 @@ impl fmt::Display for Instruction {
     }
 }
 
+#[cfg(feature = "std")]
 impl fmt::Debug for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", SPACE_RE.replace_all(&self.to_string(), " "))
+    }
+}
+
+#[cfg(not(feature = "std"))]
+impl fmt::Debug for Instruction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", &self.to_string())
     }
 }
 
@@ -609,12 +627,12 @@ impl TryFrom<u32> for Register {
     }
 }
 
+#[cfg(feature = "std")]
 impl FromStr for Register {
     type Err = RegParseError;
 
     fn from_str(reg: &str) -> Result<Self, Self::Err> {
         let r = reg.trim().trim_start_matches('$');
-
 
         if REG_RE.find(r).is_some() {
             let r = r.trim_start_matches('r');

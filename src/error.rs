@@ -1,5 +1,17 @@
-use std::fmt::Write;
-use std::{cmp, fmt};
+#[cfg(feature = "std")]
+use std::{
+    cmp,
+    fmt::{self, Write},
+};
+
+#[cfg(not(feature = "std"))]
+use alloc::{
+    fmt::{self, Write},
+    format,
+    string::{String, ToString},
+};
+#[cfg(not(feature = "std"))]
+use core::cmp;
 
 #[macro_export]
 macro_rules! error {
@@ -163,12 +175,14 @@ impl Line {
 }
 
 #[derive(Debug)]
+#[cfg(feature = "std")]
 pub enum ParserWarning {
     InvalidInstructionInDelaySlot { line: Line, delay_slot_inst: Line },
     UnalignedBranch { line: Line, offset: String },
     UnalignedJump { line: Line, target: String },
 }
 
+#[cfg(feature = "std")]
 impl fmt::Display for ParserWarning {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
