@@ -9,7 +9,7 @@ type R = ast::Register;
 pub fn disassemble(bytes: Vec<u32>) -> Vec<ast::Instruction> {
     let mut insts = vec![];
 
-    for inst in bytes {
+    for (index, inst) in bytes.iter().copied().enumerate() {
         let op = inst >> 26;
         let rs = (inst >> 21) & 0x1F;
         let rt = (inst >> 16) & 0x1F;
@@ -75,7 +75,7 @@ pub fn disassemble(bytes: Vec<u32>) -> Vec<ast::Instruction> {
                     60 => ast::Instruction::Register { op: ast::RTypeOp::Dsll32, rs: R::null(), rt: R::try_from(rt).unwrap(), rd: R::try_from(rd).unwrap(), sa },
                     62 => ast::Instruction::Register { op: ast::RTypeOp::Dsrl32, rs: R::null(), rt: R::try_from(rt).unwrap(), rd: R::try_from(rd).unwrap(), sa },
                     63 => ast::Instruction::Register { op: ast::RTypeOp::Dsra32, rs: R::null(), rt: R::try_from(rt).unwrap(), rd: R::try_from(rd).unwrap(), sa },
-                    e => panic!("Invalid R-type instruction: {}", e),
+                    e => panic!("Invalid R-type instruction: {} at: {}", e, 4 * index),
                 }
             }
             1 => match rt {
@@ -93,7 +93,7 @@ pub fn disassemble(bytes: Vec<u32>) -> Vec<ast::Instruction> {
                 17 => ast::Instruction::Immediate { op: ast::ITypeOp::Bgezal, rs: R::try_from(rs).unwrap(), rt: R::null(), imm: ast::Immediate::Short(imm as u16) },
                 18 => ast::Instruction::Immediate { op: ast::ITypeOp::Bltzall, rs: R::try_from(rs).unwrap(), rt: R::null(), imm: ast::Immediate::Short(imm as u16) },
                 19 => ast::Instruction::Immediate { op: ast::ITypeOp::Bgezall, rs: R::try_from(rs).unwrap(), rt: R::null(), imm: ast::Immediate::Short(imm as u16) },
-                e => panic!("Invalid I-type instruction: {}", e),
+                e => panic!("Invalid I-type instruction: {} at: {}", e, 4 * index),
             }
             2 => ast::Instruction::Jump { op: ast::JTypeOp::J, target: ast::Target::Address(target) },
             3 => ast::Instruction::Jump { op: ast::JTypeOp::Jal, target: ast::Target::Address(target) },
@@ -126,7 +126,7 @@ pub fn disassemble(bytes: Vec<u32>) -> Vec<ast::Instruction> {
                     6 => ast::Instruction::Register { op: ast::RTypeOp::Tlbwr, rs: R::null(), rt: R::null(), rd: R::null(), sa: 0 },
                     8 => ast::Instruction::Register { op: ast::RTypeOp::Tlbp, rs: R::null(), rt: R::null(), rd: R::null(), sa: 0 },
                     24 => ast::Instruction::Register { op: ast::RTypeOp::Eret, rs: R::null(), rt: R::null(), rd: R::null(), sa: 0 },
-                    _ => panic!("Invalid R-type instruction: {}", funct),
+                    _ => panic!("Invalid R-type instruction: {} at: {}", funct, 4 * index),
                 },
             }
             17 => match (rs, rt) {
@@ -161,7 +161,7 @@ pub fn disassemble(bytes: Vec<u32>) -> Vec<ast::Instruction> {
                     36 => ast::Instruction::Register { op: ast::RTypeOp::CvtWS, rs: R::try_from(rd).unwrap(), rt: R::null(), rd: R::try_from(sa).unwrap(), sa: 0 },
                     37 => ast::Instruction::Register { op: ast::RTypeOp::CvtLS, rs: R::try_from(rd).unwrap(), rt: R::null(), rd: R::try_from(sa).unwrap(), sa: 0 },
                     48..=63 => ast::Instruction::Register { op: ast::RTypeOp::Cs, rs: R::try_from(rd).unwrap(), rt: R::try_from(rt).unwrap(), rd: R::null(), sa: funct & 0xF },
-                    e => panic!("Invalid instruction: {}", e),
+                    e => panic!("Invalid instruction: {} at: {}", e, 4 * index),
 
                 }
                 (17, _) => match funct {
@@ -185,19 +185,19 @@ pub fn disassemble(bytes: Vec<u32>) -> Vec<ast::Instruction> {
                     36 => ast::Instruction::Register { op: ast::RTypeOp::CvtWD, rs: R::try_from(rd).unwrap(), rt: R::null(), rd: R::try_from(sa).unwrap(), sa: 0 },
                     37 => ast::Instruction::Register { op: ast::RTypeOp::CvtLD, rs: R::try_from(rd).unwrap(), rt: R::null(), rd: R::try_from(sa).unwrap(), sa: 0 },
                     48..=63 => ast::Instruction::Register { op: ast::RTypeOp::Cd, rs: R::try_from(rd).unwrap(), rt: R::try_from(rt).unwrap(), rd: R::null(), sa: funct & 0xF },
-                    e => panic!("Invalid instruction: {}", e),
+                    e => panic!("Invalid instruction: {} at: {}", e, 4 * index),
                 }
                 (20, _) => match funct {
                     32 => ast::Instruction::Register { op: ast::RTypeOp::CvtSW, rs: R::try_from(rd).unwrap(), rt: R::null(), rd: R::try_from(sa).unwrap(), sa: 0 },
                     33 => ast::Instruction::Register { op: ast::RTypeOp::CvtDW, rs: R::try_from(rd).unwrap(), rt: R::null(), rd: R::try_from(sa).unwrap(), sa: 0 },
-                    e => panic!("Invalid instruction: {}", e),
+                    e => panic!("Invalid instruction: {} at: {}", e, 4 * index),
                 }
                 (21, _) => match funct {
                     32 => ast::Instruction::Register { op: ast::RTypeOp::CvtSL, rs: R::try_from(rd).unwrap(), rt: R::null(), rd: R::try_from(sa).unwrap(), sa: 0 },
                     33 => ast::Instruction::Register { op: ast::RTypeOp::CvtDL, rs: R::try_from(rd).unwrap(), rt: R::null(), rd: R::try_from(sa).unwrap(), sa: 0 },
-                    e => panic!("Invalid instruction: {}", e),
+                    e => panic!("Invalid instruction: {} at: {}", e, 4 * index),
                 }
-                (a, b) => panic!("Invalid instruction: {} {}", a, b),
+                (a, b) => panic!("Invalid instruction: {} {} at: {}", a, b, 4 * index),
             }
             20 => ast::Instruction::Immediate { op: ast::ITypeOp::Beql, rs: R::try_from(rs).unwrap(), rt: R::try_from(rt).unwrap(), imm: ast::Immediate::Short(imm as u16) },
             21 => ast::Instruction::Immediate { op: ast::ITypeOp::Bnel, rs: R::try_from(rs).unwrap(), rt: R::try_from(rt).unwrap(), imm: ast::Immediate::Short(imm as u16) },
@@ -233,7 +233,7 @@ pub fn disassemble(bytes: Vec<u32>) -> Vec<ast::Instruction> {
             60 => ast::Instruction::Immediate { op: ast::ITypeOp::Scd, rs: R::try_from(rs).unwrap(), rt: R::try_from(rt).unwrap(), imm: ast::Immediate::Short(imm as u16) },
             61 => ast::Instruction::Immediate { op: ast::ITypeOp::Sdc1, rs: R::try_from(rs).unwrap(), rt: R::try_from(rt).unwrap(), imm: ast::Immediate::Short(imm as u16) },
             63 => ast::Instruction::Immediate { op: ast::ITypeOp::Sd, rs: R::try_from(rs).unwrap(), rt: R::try_from(rt).unwrap(), imm: ast::Immediate::Short(imm as u16) },
-            e => panic!("Invalid instruction: {}", e),
+            e => panic!("Invalid instruction: {} at: {}", e, 4 * index),
         };
 
         insts.push(i);
