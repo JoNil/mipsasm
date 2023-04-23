@@ -13,19 +13,10 @@ pub enum RegParseError {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum Target {
-    Label(String),
-    Address(u32),
-}
+pub struct Target(pub u32);
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum Immediate {
-    Short(u16),
-    Int(u32),
-    Long(u64),
-    LocalLabel(String),
-    Label(String),
-}
+pub struct Immediate(pub u16);
 
 struct Signed(u16);
 // Format an i16 as a sign-aware hex string
@@ -70,7 +61,7 @@ impl fmt::Display for Instruction {
                 op,
                 rs,
                 rt,
-                imm: Immediate::Short(imm),
+                imm: Immediate(imm),
             } => match op {
                 I::Lb
                 | I::Lbu
@@ -156,63 +147,11 @@ impl fmt::Display for Instruction {
                 }
                 e => panic!("Unhandled immediate instruction: {:?}", e),
             },
-            Instruction::Immediate {
-                op,
-                rs,
-                rt,
-                imm: Immediate::Label(l),
-            }
-            | Instruction::Immediate {
-                op,
-                rs,
-                rt,
-                imm: Immediate::LocalLabel(l),
-            } => match op {
-                I::Beqz | I::Bgtz | I::Bgtzl | I::Blez | I::Blezl | I::Bnez => {
-                    write!(f, "{:11}${}, {}", op, rs, l)
-                }
-                I::Beq | I::Beql | I::Bne | I::Bnel => {
-                    write!(f, "{:11}${}, ${}, {}", op, rs, rt, l)
-                }
-                I::Bgez
-                | I::Bgezal
-                | I::Bgezall
-                | I::Bgezl
-                | I::Bltz
-                | I::Bltzal
-                | I::Bltzall
-                | I::Bltzl
-                | I::Teqi
-                | I::Tgei
-                | I::Tgeiu
-                | I::Tlti
-                | I::Tltiu
-                | I::Tnei => {
-                    write!(f, "{:11}${}, {}", op, rs, l)
-                }
-                I::Bc0f
-                | I::Bc1f
-                | I::Bc0fl
-                | I::Bc1fl
-                | I::Bc0t
-                | I::Bc1t
-                | I::Bc0tl
-                | I::Bc1tl => {
-                    write!(f, "{:11}{}", op, l)
-                }
-                e => panic!("Unhandled immediate instruction: {:?}", e),
-            },
             Instruction::Jump {
                 op,
-                target: Target::Address(target),
+                target: Target(target),
             } => {
                 write!(f, "{:11}{:#X?}", op, target)
-            }
-            Instruction::Jump {
-                op,
-                target: Target::Label(lbl),
-            } => {
-                write!(f, "{:11}{}", op, lbl)
             }
             Instruction::Register { op, rs, rt, rd, sa } => match op {
                 R::Sync => write!(f, "{}", op),
@@ -400,7 +339,6 @@ impl fmt::Display for Instruction {
                 }
                 e => panic!("{:?} not implemented", e),
             },
-            e => panic!("Invalid instruction: {:?}", e),
         }
     }
 }
