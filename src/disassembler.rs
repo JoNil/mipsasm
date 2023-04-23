@@ -207,6 +207,7 @@ pub fn disassemble(bytes: Vec<u32>) -> Vec<ast::Instruction> {
             25 => ast::Instruction::Immediate { op: ast::ITypeOp::Daddiu, rs: R::try_from(rs).unwrap(), rt: R::try_from(rt).unwrap(), imm: ast::Immediate(imm as u16) },
             26 => ast::Instruction::Immediate { op: ast::ITypeOp::Ldl, rs: R::try_from(rs).unwrap(), rt: R::try_from(rt).unwrap(), imm: ast::Immediate(imm as u16) },
             27 => ast::Instruction::Immediate { op: ast::ITypeOp::Ldr, rs: R::try_from(rs).unwrap(), rt: R::try_from(rt).unwrap(), imm: ast::Immediate(imm as u16) },
+
             32 => ast::Instruction::Immediate { op: ast::ITypeOp::Lb, rs: R::try_from(rs).unwrap(), rt: R::try_from(rt).unwrap(), imm: ast::Immediate(imm as u16) },
             33 => ast::Instruction::Immediate { op: ast::ITypeOp::Lh, rs: R::try_from(rs).unwrap(), rt: R::try_from(rt).unwrap(), imm: ast::Immediate(imm as u16) },
             34 => ast::Instruction::Immediate { op: ast::ITypeOp::Lwl, rs: R::try_from(rs).unwrap(), rt: R::try_from(rt).unwrap(), imm: ast::Immediate(imm as u16) },
@@ -233,7 +234,7 @@ pub fn disassemble(bytes: Vec<u32>) -> Vec<ast::Instruction> {
             60 => ast::Instruction::Immediate { op: ast::ITypeOp::Scd, rs: R::try_from(rs).unwrap(), rt: R::try_from(rt).unwrap(), imm: ast::Immediate(imm as u16) },
             61 => ast::Instruction::Immediate { op: ast::ITypeOp::Sdc1, rs: R::try_from(rs).unwrap(), rt: R::try_from(rt).unwrap(), imm: ast::Immediate(imm as u16) },
             63 => ast::Instruction::Immediate { op: ast::ITypeOp::Sd, rs: R::try_from(rs).unwrap(), rt: R::try_from(rt).unwrap(), imm: ast::Immediate(imm as u16) },
-            e => panic!("Invalid instruction: {} at: {}", e, 4 * index),
+            e => panic!("Invalid instruction: {} at: {:x}", e, 4 * index),
         };
 
         insts.push(i);
