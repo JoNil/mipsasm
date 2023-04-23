@@ -1,67 +1,22 @@
-//! # Mipsasm
-//!
-//! A MIPS assembler/disassembler specifically targeting the N64.
-//!
-//! ## Features
-//! - Full support for the MIPS R4300i instruction set
-//! - Supports many psuedo-instructions for common operations
-//! - o32 ABI GPR and FPR register names
-//! - Coprocessor 0 register names
-//! - Fully-featured CLI
-//!
-//! ## Example
-//!
-//! ```rust
-//! use mipsasm::Mipsasm;
-//! # use std::error::Error;
-//! # use mipsasm::ParserError;
-//!
-//! # fn main() -> Result<(), Vec<ParserError>> {
-//! let asm = "add $a0, $a1, $a2";
-//! let bin = Mipsasm::new().base(0x80000000).assemble(asm)?;
-//! assert_eq!(bin, vec![0x00a62020]);
-//!
-//! let insts = Mipsasm::new().base(0x80000000).disassemble(&bin);
-//! assert_eq!(insts, vec!["add        $a0, $a1, $a2"]);
-//! # Ok(())
-//! # }
-//! ```
+#![no_std]
 
-#![cfg_attr(not(feature = "std"), no_std)]
-
-mod ast;
-mod disassembler;
-mod error;
-
-#[cfg(feature = "std")]
-mod assembler;
-
-#[cfg(feature = "std")]
-mod parser;
-
-pub use error::ParserError;
-
-#[cfg(not(feature = "std"))]
 extern crate alloc;
 
-#[cfg(feature = "std")]
-use std::collections::HashMap;
-
-#[cfg(not(feature = "std"))]
-use core::marker::PhantomData;
-
-#[cfg(not(feature = "std"))]
 use alloc::{
     format,
     string::{String, ToString},
     vec::Vec,
 };
+use core::marker::PhantomData;
+pub use error::ParserError;
+
+mod ast;
+mod disassembler;
+mod error;
 
 /// An instance of the assembler/disassembler
 pub struct Mipsasm<'a> {
     base_addr: u32,
-    #[cfg(feature = "std")]
-    syms: HashMap<&'a str, u32>,
     #[cfg(not(feature = "std"))]
     _marker: PhantomData<&'a str>,
     debug: bool,
@@ -103,23 +58,6 @@ impl<'a> Mipsasm<'a> {
         self
     }
 
-    /// Provides the assembler with a set of symbols.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use mipsasm::Mipsasm;
-    /// use std::collections::HashMap;
-    ///
-    /// let mut mipsasm = Mipsasm::new();
-    /// mipsasm.symbols(HashMap::from_iter(vec![("foo", 0x8000_0000)]));
-    /// ```
-    #[cfg(feature = "std")]
-    pub fn symbols(&mut self, syms: HashMap<&'a str, u32>) -> &mut Mipsasm<'a> {
-        self.syms = syms;
-        self
-    }
-
     /// Set the debug flag for the assembler.
     ///
     /// When debug is set to true, the disassembler will print instructions with all extra whitespace stripped.
@@ -138,24 +76,6 @@ impl<'a> Mipsasm<'a> {
         self
     }
 
-    /// Assembles a set of MIPS assembly instructions.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use mipsasm::Mipsasm;
-    /// let mut mipsasm = Mipsasm::new();
-    /// let instructions = mipsasm.assemble("
-    ///    add $t0, $t1, $t2
-    ///   addi $t0, $t1, 0x1234
-    /// ");
-    /// ```
-    #[cfg(feature = "std")]
-    pub fn assemble(&self, input: &str) -> Result<Vec<u32>, Vec<ParserError>> {
-        let mut parser = parser::Parser::new(input, self.base_addr, &self.syms);
-        Ok(assembler::assemble(parser.parse()?))
-    }
-
     /// Disassembles a set of MIPS instructions.
     ///
     /// # Examples
@@ -168,34 +88,13 @@ impl<'a> Mipsasm<'a> {
     /// assert_eq!(instructions, vec!["mult       $a0, $a1"]);
     /// ```
     pub fn disassemble(&self, input: &[u32]) -> Vec<String> {
-        let mut x = disassembler::disassemble(input.to_vec());
-        #[cfg(feature = "std")]
-        self.match_syms(&mut x);
+        let x = disassembler::disassemble(input.to_vec());
         if self.debug {
             x.iter()
                 .map(|x| format!("{:?}", x))
                 .collect::<Vec<String>>()
         } else {
             x.iter().map(|x| x.to_string()).collect::<Vec<String>>()
-        }
-    }
-
-    // Iterates over a vector of instructions and replaces any value with a defined symbol with the actual symbol string.
-    #[cfg(feature = "std")]
-    fn match_syms(&self, insts: &mut Vec<ast::Instruction>) {
-        for i in insts {
-            if let ast::Instruction::Jump {
-                op,
-                target: ast::Target::Address(addr),
-            } = i
-            {
-                if let Some(sym) = self.syms.iter().find(|(_, v)| **v == *addr) {
-                    *i = ast::Instruction::Jump {
-                        op: *op,
-                        target: ast::Target::Label(sym.0.to_string()),
-                    };
-                }
-            }
         }
     }
 }

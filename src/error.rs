@@ -1,16 +1,8 @@
-#[cfg(feature = "std")]
-use std::{
-    cmp,
-    fmt::{self, Write},
-};
-
-#[cfg(not(feature = "std"))]
 use alloc::{
     fmt::{self, Write},
     format,
     string::{String, ToString},
 };
-#[cfg(not(feature = "std"))]
 use core::cmp;
 
 #[macro_export]
@@ -171,112 +163,6 @@ pub struct Line {
 impl Line {
     pub fn new(num: usize, content: String) -> Self {
         Self { num, content }
-    }
-}
-
-#[derive(Debug)]
-#[cfg(feature = "std")]
-pub enum ParserWarning {
-    InvalidInstructionInDelaySlot { line: Line, delay_slot_inst: Line },
-    UnalignedBranch { line: Line, offset: String },
-    UnalignedJump { line: Line, target: String },
-}
-
-#[cfg(feature = "std")]
-impl fmt::Display for ParserWarning {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::InvalidInstructionInDelaySlot {
-                line: Line { num, content },
-                delay_slot_inst:
-                    Line {
-                        num: delay_num,
-                        content: delay_content,
-                    },
-            } => {
-                let margin = num.to_string().len();
-                writeln!(
-                    f,
-                    "warning: instruction `{}` cannot be in a delay slot",
-                    delay_content.trim()
-                )?;
-                writeln!(
-                    f,
-                    "{}",
-                    fmt_line(
-                        *delay_num,
-                        delay_content,
-                        margin,
-                        false,
-                        "this instruction cannot be in a delay slot",
-                        true,
-                        delay_content.trim()
-                    )
-                )?;
-                writeln!(f, "\x1b[94m...\x1b[0m")?;
-                writeln!(
-                    f,
-                    "{}",
-                    fmt_line(
-                        *num,
-                        content,
-                        margin,
-                        true,
-                        "delay slot occurs after this instruction",
-                        false,
-                        content.trim()
-                    )
-                )
-            }
-            Self::UnalignedBranch {
-                line: Line { num, content },
-                offset,
-            } => {
-                let margin = num.to_string().len();
-                writeln!(
-                    f,
-                    "warning: branch offset `{}` is not aligned to a 4-byte boundary",
-                    offset
-                )?;
-                writeln!(
-                    f,
-                    "{}",
-                    fmt_line(
-                        *num,
-                        content,
-                        margin,
-                        true,
-                        "offset is not divisible by 4",
-                        false,
-                        offset
-                    )
-                )
-            }
-            Self::UnalignedJump {
-                line: Line { num, content },
-                target,
-            } => {
-                let margin = num.to_string().len();
-                writeln!(
-                    f,
-                    "warning: jump target `{}` is not aligned to a 4-byte boundary",
-                    target
-                )?;
-                writeln!(
-                    f,
-                    "{}",
-                    fmt_line(
-                        *num,
-                        content,
-                        margin,
-                        true,
-                        "target is not divisible by 4",
-                        false,
-                        target
-                    )
-                )
-            }
-        }
     }
 }
 

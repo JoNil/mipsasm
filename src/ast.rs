@@ -1,22 +1,11 @@
-use core::convert::{From, TryFrom};
-use core::fmt;
-use core::str::FromStr;
-use strum_macros::{Display, EnumString};
-
-#[cfg(not(feature = "std"))]
 use alloc::{
     format,
     string::{String, ToString},
 };
-
-#[cfg(feature = "std")]
-use once_cell::sync::Lazy;
-
-#[cfg(feature = "std")]
-use regex::Regex;
-
-#[cfg(feature = "std")]
-static REG_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"r\d{1,2}").unwrap());
+use core::convert::{From, TryFrom};
+use core::fmt;
+use core::str::FromStr;
+use strum_macros::{Display, EnumString};
 
 #[derive(Debug)]
 pub enum RegParseError {
@@ -29,21 +18,6 @@ pub enum Target {
     Address(u32),
 }
 
-impl Target {
-    pub fn as_u32(&self) -> u32 {
-        match self {
-            Target::Label(name) => {
-                panic!("Cannot convert label `{}` to u32", name)
-            }
-            Target::Address(addr) => *addr,
-        }
-    }
-
-    pub fn is_label(&self) -> bool {
-        matches!(self, Target::Label(_))
-    }
-}
-
 #[derive(Debug, PartialEq, Eq)]
 pub enum Immediate {
     Short(u16),
@@ -51,59 +25,6 @@ pub enum Immediate {
     Long(u64),
     LocalLabel(String),
     Label(String),
-}
-
-impl Immediate {
-    pub fn as_u32(&self) -> u32 {
-        match self {
-            Immediate::Short(i) => *i as u32,
-            Immediate::Int(i) => *i,
-            x => panic!("Cannot convert `{:?}` to u32", x),
-        }
-    }
-
-    pub fn as_u64(&self) -> u64 {
-        match self {
-            Immediate::Short(i) => *i as u64,
-            Immediate::Int(i) => *i as u64,
-            Immediate::Long(i) => *i,
-            x => panic!("Cannot convert `{:?}` to u64", x),
-        }
-    }
-
-    pub fn is_label(&self) -> bool {
-        matches!(self, Immediate::Label(_) | Immediate::LocalLabel(_))
-    }
-
-    pub fn new<T>(val: T) -> Self
-    where
-        T: num::PrimInt,
-    {
-        match T::zero().count_zeros() {
-            16 => {
-                if let Some(i) = val.to_u16() {
-                    Immediate::Short(i)
-                } else {
-                    Immediate::Short(val.to_i16().unwrap() as u16)
-                }
-            }
-            32 => {
-                if let Some(i) = val.to_u32() {
-                    Immediate::Int(i)
-                } else {
-                    Immediate::Int(val.to_i32().unwrap() as u32)
-                }
-            }
-            64 => {
-                if let Some(i) = val.to_u64() {
-                    Immediate::Long(i)
-                } else {
-                    Immediate::Long(val.to_i64().unwrap() as u64)
-                }
-            }
-            _ => panic!("Invalid integer size: {}", T::zero().count_zeros()),
-        }
-    }
 }
 
 struct Signed(u16);
@@ -141,44 +62,6 @@ pub enum Instruction {
 
 type I = ITypeOp;
 type R = RTypeOp;
-
-impl Instruction {
-    pub fn has_delay_slot(&self) -> bool {
-        match self {
-            Instruction::Jump { .. } => true,
-            Instruction::Immediate { op, .. } => matches!(
-                op,
-                I::Beqz
-                    | I::Bgtz
-                    | I::Bgtzl
-                    | I::Blez
-                    | I::Blezl
-                    | I::Bnez
-                    | I::Beq
-                    | I::Beql
-                    | I::Bne
-                    | I::Bnel
-                    | I::Bgez
-                    | I::Bgezal
-                    | I::Bgezall
-                    | I::Bgezl
-                    | I::Bltz
-                    | I::Bltzal
-                    | I::Bltzall
-                    | I::Bltzl
-                    | I::Bc0f
-                    | I::Bc1f
-                    | I::Bc0fl
-                    | I::Bc1fl
-                    | I::Bc0t
-                    | I::Bc1t
-                    | I::Bc0tl
-                    | I::Bc1tl
-            ),
-            Instruction::Register { op, .. } => matches!(op, R::Jr | R::Jalr),
-        }
-    }
-}
 
 impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -623,61 +506,6 @@ impl TryFrom<u32> for Register {
     }
 }
 
-#[cfg(feature = "std")]
-impl FromStr for Register {
-    type Err = RegParseError;
-
-    fn from_str(reg: &str) -> Result<Self, Self::Err> {
-        let r = reg.trim().trim_start_matches('$');
-
-        if REG_RE.find(r).is_some() {
-            let r = r.trim_start_matches('r');
-            let r = r.parse::<u32>().unwrap();
-            return Register::try_from(r);
-        }
-
-        if let Ok(x) = r.parse::<u32>() {
-            return Register::try_from(x);
-        }
-
-        match r.to_lowercase().as_str() {
-            "zero" | "r0" => Ok(Register::Zero),
-            "at" => Ok(Register::At),
-            "v0" => Ok(Register::V0),
-            "v1" => Ok(Register::V1),
-            "a0" => Ok(Register::A0),
-            "a1" => Ok(Register::A1),
-            "a2" => Ok(Register::A2),
-            "a3" => Ok(Register::A3),
-            "t0" => Ok(Register::T0),
-            "t1" => Ok(Register::T1),
-            "t2" => Ok(Register::T2),
-            "t3" => Ok(Register::T3),
-            "t4" => Ok(Register::T4),
-            "t5" => Ok(Register::T5),
-            "t6" => Ok(Register::T6),
-            "t7" => Ok(Register::T7),
-            "s0" => Ok(Register::S0),
-            "s1" => Ok(Register::S1),
-            "s2" => Ok(Register::S2),
-            "s3" => Ok(Register::S3),
-            "s4" => Ok(Register::S4),
-            "s5" => Ok(Register::S5),
-            "s6" => Ok(Register::S6),
-            "s7" => Ok(Register::S7),
-            "t8" => Ok(Register::T8),
-            "t9" => Ok(Register::T9),
-            "k0" => Ok(Register::K0),
-            "k1" => Ok(Register::K1),
-            "gp" => Ok(Register::Gp),
-            "sp" => Ok(Register::Sp),
-            "fp" => Ok(Register::Fp),
-            "ra" => Ok(Register::Ra),
-            _ => Err(RegParseError::RegParseError(reg.to_string())),
-        }
-    }
-}
-
 impl From<FloatRegister> for Register {
     fn from(reg: FloatRegister) -> Self {
         Register::try_from(reg as u32).unwrap()
@@ -831,32 +659,22 @@ impl From<Register> for FloatRegister {
 #[derive(Clone, Copy, Debug, Display)]
 #[strum(serialize_all = "PascalCase")]
 pub enum Cop0Register {
-    Index,
-    Random,
-    EntryLo0,
-    EntryLo1,
-    Context,
-    PageMask,
-    Wired,
-    Semaphore,
-    BadVAddr = 8,
-    Count,
-    EntryHi,
-    Compare,
-    Status,
-    Cause,
-    Epc,
-    PrId,
-    Config,
-    LLAddr,
-    WatchLo,
-    WatchHi,
-    XContext,
-    ParityError = 26,
-    CacheError,
-    TagLo,
-    TagHi,
-    ErrorEPC,
+    IDMemAddressForDMA,
+    DramAddressForDMA,
+    DmaReadLength,
+    DmaWriteLength,
+    RspStatus,
+    DmaFull,
+    DmaBusy,
+    CpuRspSemaphore,
+    RdpCommandBufferStart,
+    RdpCommandBufferEnd,
+    RdpCommandBufferCurrent,
+    RdpStatus,
+    RdpClockCounter,
+    RdpCommandBufferBusyCounter,
+    RdpPipeBusyCounter,
+    RdpTmemBusyCounter,
 }
 
 impl TryFrom<u32> for Cop0Register {
@@ -864,77 +682,22 @@ impl TryFrom<u32> for Cop0Register {
 
     fn try_from(reg: u32) -> Result<Self, Self::Error> {
         match reg {
-            0 => Ok(Cop0Register::Index),
-            1 => Ok(Cop0Register::Random),
-            2 => Ok(Cop0Register::EntryLo0),
-            3 => Ok(Cop0Register::EntryLo1),
-            4 => Ok(Cop0Register::Context),
-            5 => Ok(Cop0Register::PageMask),
-            6 => Ok(Cop0Register::Wired),
-            7 => Ok(Cop0Register::Semaphore),
-            8 => Ok(Cop0Register::BadVAddr),
-            9 => Ok(Cop0Register::Count),
-            10 => Ok(Cop0Register::EntryHi),
-            11 => Ok(Cop0Register::Compare),
-            12 => Ok(Cop0Register::Status),
-            13 => Ok(Cop0Register::Cause),
-            14 => Ok(Cop0Register::Epc),
-            15 => Ok(Cop0Register::PrId),
-            16 => Ok(Cop0Register::Config),
-            17 => Ok(Cop0Register::LLAddr),
-            18 => Ok(Cop0Register::WatchLo),
-            19 => Ok(Cop0Register::WatchHi),
-            20 => Ok(Cop0Register::XContext),
-            26 => Ok(Cop0Register::ParityError),
-            27 => Ok(Cop0Register::CacheError),
-            28 => Ok(Cop0Register::TagLo),
-            29 => Ok(Cop0Register::TagHi),
-            30 => Ok(Cop0Register::ErrorEPC),
-            e => Err(RegParseError::RegParseError(e.to_string())),
-        }
-    }
-}
-
-impl FromStr for Cop0Register {
-    type Err = RegParseError;
-
-    fn from_str(reg: &str) -> Result<Self, Self::Err> {
-        let reg = reg.trim().trim_start_matches('$');
-
-        if let Ok(x) = reg.parse::<u32>() {
-            return Cop0Register::try_from(x);
-        }
-
-        if let Ok(x) = u32::from_str_radix(reg, 16) {
-            return Cop0Register::try_from(x);
-        }
-
-        match reg.to_lowercase().as_str() {
-            "index" => Ok(Cop0Register::Index),
-            "random" => Ok(Cop0Register::Random),
-            "entrylo0" => Ok(Cop0Register::EntryLo0),
-            "entrylo1" => Ok(Cop0Register::EntryLo1),
-            "context" => Ok(Cop0Register::Context),
-            "pagemask" => Ok(Cop0Register::PageMask),
-            "wired" => Ok(Cop0Register::Wired),
-            "badvaddr" => Ok(Cop0Register::BadVAddr),
-            "count" => Ok(Cop0Register::Count),
-            "entryhi" => Ok(Cop0Register::EntryHi),
-            "compare" => Ok(Cop0Register::Compare),
-            "status" => Ok(Cop0Register::Status),
-            "cause" => Ok(Cop0Register::Cause),
-            "epc" => Ok(Cop0Register::Epc),
-            "prid" => Ok(Cop0Register::PrId),
-            "config" => Ok(Cop0Register::Config),
-            "lladdr" => Ok(Cop0Register::LLAddr),
-            "watchlo" => Ok(Cop0Register::WatchLo),
-            "watchhi" => Ok(Cop0Register::WatchHi),
-            "xcontext" => Ok(Cop0Register::XContext),
-            "parityerror" => Ok(Cop0Register::ParityError),
-            "cacheerror" => Ok(Cop0Register::CacheError),
-            "taglo" => Ok(Cop0Register::TagLo),
-            "taghi" => Ok(Cop0Register::TagHi),
-            "errorepc" => Ok(Cop0Register::ErrorEPC),
+            0 => Ok(Cop0Register::IDMemAddressForDMA),
+            1 => Ok(Cop0Register::DramAddressForDMA),
+            2 => Ok(Cop0Register::DmaReadLength),
+            3 => Ok(Cop0Register::DmaWriteLength),
+            4 => Ok(Cop0Register::RspStatus),
+            5 => Ok(Cop0Register::DmaFull),
+            6 => Ok(Cop0Register::DmaBusy),
+            7 => Ok(Cop0Register::CpuRspSemaphore),
+            8 => Ok(Cop0Register::RdpCommandBufferStart),
+            9 => Ok(Cop0Register::RdpCommandBufferEnd),
+            10 => Ok(Cop0Register::RdpCommandBufferCurrent),
+            11 => Ok(Cop0Register::RdpStatus),
+            12 => Ok(Cop0Register::RdpClockCounter),
+            13 => Ok(Cop0Register::RdpCommandBufferBusyCounter),
+            14 => Ok(Cop0Register::RdpPipeBusyCounter),
+            15 => Ok(Cop0Register::RdpTmemBusyCounter),
             e => Err(RegParseError::RegParseError(e.to_string())),
         }
     }

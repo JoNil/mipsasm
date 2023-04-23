@@ -1,34 +1,17 @@
 [package]
-name = "mipsasm"
-description = "A MIPS assembler targeting the N64"
-documentation = "https://docs.rs/mipsasm"
-repository = "https://github.com/imaandrew/mipsasm/"
-version = "2.0.1"
+name = "mipsasm-rsp"
+description = "A MIPS assembler targeting the N64 rsp"
+documentation = "https://docs.rs/mipsasm-rsp"
+repository = "https://github.com/JoNil/mipsasm/"
+version = "1.0.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
-keywords = ["mipsasm", "mips", "assembler", "assembly", "n64"]
-categories = ["command-line-utilities", "encoding", "hardware-support"]
+keywords = ["rsp", "mipsasm", "mips", "assembler", "assembly", "n64"]
+categories = ["encoding", "hardware-support"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[features]
-default = ["std"]
-std = ["clap", "indexmap", "once_cell", "regex"]
-
 [dependencies]
-clap = { version = "3.2.17", features = ["cargo", "derive"], optional = true }
-indexmap = { version = "1.9.1", optional = true }
 num = { version = "0.4.0", default-features = false }
-once_cell = { version = "1.15.0", optional = true }
-regex = { version = "1.6.0", optional = true }
 strum = { version = "0.24.1", default-features = false }
 strum_macros = { version = "0.24.3", default-features = false }
-
-[lib]
-name = "mipsasm"
-path = "src/lib.rs"
-
-[[bin]]
-name = "mipsasm"
-path = "src/bin/bin.rs"
-required-features = ["std"]
