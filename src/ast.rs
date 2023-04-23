@@ -86,12 +86,12 @@ impl fmt::Display for Instruction {
                 | I::Sw
                 | I::Swl
                 | I::Swr => {
-                    write!(f, "{:11}${}, {:#x}(${})", op, rt, Signed(*imm), rs)
+                    write!(f, "{:7} {}, {:#x}({})", op, rt, Signed(*imm), rs)
                 }
                 I::Cache => {
                     write!(
                         f,
-                        "{:11}{:#x}, {:#x}(${})",
+                        "{:7} {:#x}, {:#x}({})",
                         op,
                         rt.as_num(),
                         Signed(*imm),
@@ -99,15 +99,15 @@ impl fmt::Display for Instruction {
                     )
                 }
                 I::Addi | I::Addiu | I::Daddi | I::Daddiu | I::Slti | I::Sltiu => {
-                    write!(f, "{:11}${}, ${}, {:#x}", op, rt, rs, Signed(*imm))
+                    write!(f, "{:7} {}, {}, {:#x}", op, rt, rs, Signed(*imm))
                 }
-                I::Andi | I::Ori | I::Xori => write!(f, "{:11}${}, ${}, {:#x}", op, rt, rs, imm),
-                I::Lui => write!(f, "{:11}${}, {:#x}", op, rt, imm),
+                I::Andi | I::Ori | I::Xori => write!(f, "{:7} {}, {}, {:#x}", op, rt, rs, imm),
+                I::Lui => write!(f, "{:7} {}, {:#x}", op, rt, imm),
                 I::Beqz | I::Bgtz | I::Bgtzl | I::Blez | I::Blezl | I::Bnez => {
-                    write!(f, "{:11}${}, {:#x}", op, rs, Signed(*imm))
+                    write!(f, "{:7} {}, {:#x}", op, rs, Signed(*imm))
                 }
                 I::Beq | I::Beql | I::Bne | I::Bnel => {
-                    write!(f, "{:11}${}, ${}, {:#x}", op, rs, rt, Signed(*imm))
+                    write!(f, "{:7} {}, {}, {:#x}", op, rs, rt, Signed(*imm))
                 }
                 I::Bgez
                 | I::Bgezal
@@ -123,7 +123,7 @@ impl fmt::Display for Instruction {
                 | I::Tlti
                 | I::Tltiu
                 | I::Tnei => {
-                    write!(f, "{:11}${}, {:#x}", op, rs, Signed(*imm))
+                    write!(f, "{:7} {}, {:#x}", op, rs, Signed(*imm))
                 }
                 I::Bc0f
                 | I::Bc1f
@@ -133,12 +133,12 @@ impl fmt::Display for Instruction {
                 | I::Bc1t
                 | I::Bc0tl
                 | I::Bc1tl => {
-                    write!(f, "{:11}{:#x}", op, Signed(*imm))
+                    write!(f, "{:7}{:#x}", op, Signed(*imm))
                 }
                 I::Ldc1 | I::Lwc1 | I::Sdc1 | I::Swc1 => {
                     write!(
                         f,
-                        "{:11}${}, {:#x}(${})",
+                        "{:7} {}, {:#x}({})",
                         op,
                         FloatRegister::from(*rt),
                         Signed(*imm),
@@ -151,7 +151,7 @@ impl fmt::Display for Instruction {
                 op,
                 target: Target(target),
             } => {
-                write!(f, "{:11}{:#X?}", op, target)
+                write!(f, "{:7}{:#X?}", op, target)
             }
             Instruction::Register { op, rs, rt, rd, sa } => match op {
                 R::Sync => write!(f, "{}", op),
@@ -169,7 +169,7 @@ impl fmt::Display for Instruction {
                 | R::Sub
                 | R::Subu
                 | R::Xor => {
-                    write!(f, "{:11}${}, ${}, ${}", op, rd, rs, rt)
+                    write!(f, "{:7} {}, {}, {}", op, rd, rs, rt)
                 }
                 R::Dsll
                 | R::Dsll32
@@ -180,16 +180,16 @@ impl fmt::Display for Instruction {
                 | R::Sll
                 | R::Sra
                 | R::Srl => {
-                    write!(f, "{:11}${}, ${}, {:#x?}", op, rd, rt, sa)
+                    write!(f, "{:7} {}, {}, {:#x?}", op, rd, rt, sa)
                 }
                 R::Dsllv | R::Dsrav | R::Dsrlv | R::Sllv | R::Srav | R::Srlv => {
-                    write!(f, "{:11}${}, ${}, ${}", op, rd, rt, rs)
+                    write!(f, "{:7} {}, {}, {}", op, rd, rt, rs)
                 }
                 R::Break | R::Syscall => {
                     if *sa == 0 {
                         write!(f, "{}", op)
                     } else {
-                        write!(f, "{:11}{:#x?}", op, sa)
+                        write!(f, "{:7} {:#x?}", op, sa)
                     }
                 }
                 R::Ddiv
@@ -206,26 +206,26 @@ impl fmt::Display for Instruction {
                 | R::Tlt
                 | R::Tltu
                 | R::Tne => {
-                    write!(f, "{:11}${}, ${}", op, rs, rt)
+                    write!(f, "{:7} {}, {}", op, rs, rt)
                 }
                 R::Jalr => {
                     if let &Register::Ra = rd {
-                        write!(f, "{:11}${}", op, rs)
+                        write!(f, "{:7} {}", op, rs)
                     } else {
-                        write!(f, "{:11}${}, ${}", op, rd, rs)
+                        write!(f, "{:7} {},  {}", op, rd, rs)
                     }
                 }
                 R::Jr | R::Mthi | R::Mtlo => {
-                    write!(f, "{:11}${}", op, rs)
+                    write!(f, "{:7} {}", op, rs)
                 }
                 R::Mfhi | R::Mflo => {
-                    write!(f, "{:11}${}", op, rd)
+                    write!(f, "{:7} {}", op, rd)
                 }
                 R::Cfc0 | R::Ctc0 | R::Dmfc0 | R::Dmtc0 | R::Mfc0 | R::Mtc0 => {
-                    write!(f, "{:11}${}, {}", op, rt, Cop0Register::from(*rd))
+                    write!(f, "{:7} {}, {}", op, rt, Cop0Register::from(*rd))
                 }
                 R::Cfc1 | R::Ctc1 | R::Dmfc1 | R::Dmtc1 | R::Mfc1 | R::Mtc1 => {
-                    write!(f, "{:11}${}, ${}", op, rt, FloatRegister::from(*rd))
+                    write!(f, "{:7} {}, {}", op, rt, FloatRegister::from(*rd))
                 }
                 R::Eret | R::Tlbp | R::Tlbr | R::Tlbwi | R::Tlbwr => {
                     write!(f, "{}", op)
@@ -234,7 +234,7 @@ impl fmt::Display for Instruction {
                     let x = op.to_string().replace('_', ".");
                     write!(
                         f,
-                        "{:11}${}, ${}, ${}",
+                        "{:7} {},  {},  {}",
                         x,
                         FloatRegister::from(*rd),
                         FloatRegister::from(*rs),
@@ -262,7 +262,7 @@ impl fmt::Display for Instruction {
                     let x = op.to_string().replace('_', ".");
                     write!(
                         f,
-                        "{:11}${}, ${}",
+                        "{:7} {},  {}",
                         x,
                         FloatRegister::from(*rd),
                         FloatRegister::from(*rs)
@@ -272,7 +272,7 @@ impl fmt::Display for Instruction {
                     let x = op.to_string().replace('_', ".");
                     write!(
                         f,
-                        "{}    ${}, ${}",
+                        "{} {}, {}",
                         x,
                         FloatRegister::from(*rd),
                         FloatRegister::from(*rs)
@@ -293,65 +293,33 @@ impl fmt::Display for Instruction {
                     let x = op.to_string().replace('_', ".");
                     write!(
                         f,
-                        "{}   ${}, ${}",
+                        "{} {}, {}",
                         x,
                         FloatRegister::from(*rd),
                         FloatRegister::from(*rs)
                     )
                 }
                 R::Cs => {
-                    if *sa == 9 {
-                        write!(
-                            f,
-                            "c.{}.s    ${}, ${}",
-                            FloatCond::try_from(*sa).unwrap(),
-                            FloatRegister::from(*rs),
-                            FloatRegister::from(*rt)
-                        )
-                    } else {
-                        write!(
-                            f,
-                            "c.{}.s\t    ${}, ${}",
-                            FloatCond::try_from(*sa).unwrap(),
-                            FloatRegister::from(*rs),
-                            FloatRegister::from(*rt)
-                        )
-                    }
+                    write!(
+                        f,
+                        "c.{}.s {}, {}",
+                        FloatCond::try_from(*sa).unwrap(),
+                        FloatRegister::from(*rs),
+                        FloatRegister::from(*rt)
+                    )
                 }
                 R::Cd => {
-                    if *sa == 9 {
-                        write!(
-                            f,
-                            "c.{}.d    ${}, ${}",
-                            FloatCond::try_from(*sa).unwrap(),
-                            FloatRegister::from(*rs),
-                            FloatRegister::from(*rt)
-                        )
-                    } else {
-                        write!(
-                            f,
-                            "c.{}.d\t    ${}, ${}",
-                            FloatCond::try_from(*sa).unwrap(),
-                            FloatRegister::from(*rs),
-                            FloatRegister::from(*rt)
-                        )
-                    }
+                    write!(
+                        f,
+                        "c.{}.d {}, {}",
+                        FloatCond::try_from(*sa).unwrap(),
+                        FloatRegister::from(*rs),
+                        FloatRegister::from(*rt)
+                    )
                 }
                 e => panic!("{:?} not implemented", e),
             },
         }
-    }
-}
-
-impl fmt::Debug for Instruction {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let s = self.to_string();
-        for c in s.chars() {
-            if !c.is_whitespace() {
-                write!(f, "{}", c)?;
-            }
-        }
-        Ok(())
     }
 }
 

@@ -3,7 +3,6 @@
 extern crate alloc;
 
 use alloc::{
-    format,
     string::{String, ToString},
     vec::Vec,
 };
@@ -17,9 +16,7 @@ mod error;
 /// An instance of the assembler/disassembler
 pub struct Mipsasm<'a> {
     base_addr: u32,
-    #[cfg(not(feature = "std"))]
     _marker: PhantomData<&'a str>,
-    debug: bool,
 }
 
 impl<'a> Default for Mipsasm<'a> {
@@ -35,11 +32,7 @@ impl<'a> Mipsasm<'a> {
     pub fn new() -> Mipsasm<'a> {
         Mipsasm {
             base_addr: 0,
-            #[cfg(feature = "std")]
-            syms: HashMap::new(),
-            #[cfg(not(feature = "std"))]
             _marker: PhantomData,
-            debug: false,
         }
     }
 
@@ -58,24 +51,6 @@ impl<'a> Mipsasm<'a> {
         self
     }
 
-    /// Set the debug flag for the assembler.
-    ///
-    /// When debug is set to true, the disassembler will print instructions with all extra whitespace stripped.
-    /// This is used for testing and will most likely not be useful for other purposes.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use mipsasm::Mipsasm;
-    ///
-    /// let mut mipsasm = Mipsasm::new();
-    /// mipsasm.debug();
-    /// ```
-    pub fn debug(&mut self) -> &mut Mipsasm<'a> {
-        self.debug = true;
-        self
-    }
-
     /// Disassembles a set of MIPS instructions.
     ///
     /// # Examples
@@ -85,16 +60,10 @@ impl<'a> Mipsasm<'a> {
     ///
     /// let mut mipsasm = Mipsasm::new();
     /// let instructions = mipsasm.disassemble(&[0x00850018]);
-    /// assert_eq!(instructions, vec!["mult       $a0, $a1"]);
+    /// assert_eq!(instructions, vec!["mult    a0, a1"]);
     /// ```
     pub fn disassemble(&self, input: &[u32]) -> Vec<String> {
         let x = disassembler::disassemble(input.to_vec());
-        if self.debug {
-            x.iter()
-                .map(|x| format!("{:?}", x))
-                .collect::<Vec<String>>()
-        } else {
-            x.iter().map(|x| x.to_string()).collect::<Vec<String>>()
-        }
+        x.iter().map(|x| x.to_string()).collect::<Vec<String>>()
     }
 }
