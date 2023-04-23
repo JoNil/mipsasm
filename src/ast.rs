@@ -88,6 +88,17 @@ impl fmt::Display for Instruction {
                 | I::Swr => {
                     write!(f, "{:7} {}, {:#x}({})", op, rt, Signed(*imm), rs)
                 }
+                I::Lbv => {
+                    write!(
+                        f,
+                        "{:7} {}[{}], {:#x}({})",
+                        op,
+                        rt,
+                        *imm >> 7,
+                        *imm & 0b1111111,
+                        rs
+                    )
+                }
                 I::Cache => {
                     write!(
                         f,
@@ -662,6 +673,7 @@ pub enum ITypeOp {
     Lui,
     Lw,
     Lwc1,
+    Lbv,
     Lwl,
     Lwr,
     Lwu,
