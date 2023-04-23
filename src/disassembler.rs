@@ -19,6 +19,11 @@ pub fn disassemble(bytes: Vec<u32>) -> Vec<ast::Instruction> {
         let funct = inst & 0x3F;
         let imm = inst & 0xFFFF;
         let target = ((inst & 0x3FFFFFF) << 2) | 0x80000000;
+        let vd = (inst >> 6)&0x1F;
+        let vs = (inst >> 11)&0x1F;
+        let vt = (inst >> 16)&0x1F;
+        let de = (inst >> 11)&0x1F;
+        let e = (inst >> 21)&0xF;
         
         let i = match op {
             0 => {
@@ -198,6 +203,17 @@ pub fn disassemble(bytes: Vec<u32>) -> Vec<ast::Instruction> {
                     e => panic!("Invalid instruction: {} at: {:x} (ins {inst:x})", e, 4 * index),
                 }
                 (a, b) => panic!("Invalid instruction: {} {} at: {:x} (ins {inst:x})", a, b, 4 * index),
+            }
+            18 => match funct {
+                0b000010 => ast::Instruction::Vector { op: ast::VTypeOp::Vrndp, vd: R::try_from(vd).unwrap(), vs: R::try_from(vs).unwrap(), vt: R::try_from(vt).unwrap(), e: R::try_from(e).unwrap(), de: 0 }, 
+                0b110100 => ast::Instruction::Vector { op: ast::VTypeOp::Vrsq, vd: R::try_from(vd).unwrap(), vs: 0, vt: R::try_from(vt).unwrap(), e: R::try_from(e).unwrap(), de: R::try_from(de).unwrap() },
+                0b110110 => ast::Instruction::Vector { op: ast::VTypeOp::Vrsqh, vd: R::try_from(vd).unwrap(), vs: 0, vt: R::try_from(vt).unwrap(), e: R::try_from(e).unwrap(), de: R::try_from(de).unwrap() },
+                0b110101 => ast::Instruction::Vector { op: ast::VTypeOp::Vrsql, vd: R::try_from(vd).unwrap(), vs: 0, vt: R::try_from(vt).unwrap(), e: R::try_from(e).unwrap(), de: R::try_from(de).unwrap() },
+                0b11101 => ast::Instruction::Vector { op: ast::VTypeOp::Vsar, vd: R::try_from(vd).unwrap(), vs: R::try_from(vs).unwrap(), vt: R::try_from(vt).unwrap(), e: R::try_from(e).unwrap(), de: 0 },
+                0b01001 => ast::Instruction::Vector { op: ast::VTypeOp::Vsub, vd: R::try_from(vd).unwrap(), vs: R::try_from(vs).unwrap(), vt: R::try_from(vt).unwrap(), e: R::try_from(e).unwrap(), de: 0 },
+                21 => ast::Instruction::Vector { op: ast::VTypeOp::Vsubc, vd: R::try_from(vd).unwrap(), vs: R::try_from(vs).unwrap(), vt: R::try_from(vt).unwrap(), e: R::try_from(e).unwrap(), de: 0 },
+                44 => ast::Instruction::Vector { op: ast::VTypeOp::Vxor, vd: R::try_from(vd).unwrap(), vs: R::try_from(vs).unwrap(), vt: R::try_from(vt).unwrap(), e: R::try_from(e).unwrap(), de: 0 },
+                e => panic!("Invalid VU instruction: {} at: {:x} (ins {inst:x})", e, 4 * index),
             }
             20 => ast::Instruction::Immediate { op: ast::ITypeOp::Beql, rs: R::try_from(rs).unwrap(), rt: R::try_from(rt).unwrap(), imm: ast::Immediate(imm as u16) },
             21 => ast::Instruction::Immediate { op: ast::ITypeOp::Bnel, rs: R::try_from(rs).unwrap(), rt: R::try_from(rt).unwrap(), imm: ast::Immediate(imm as u16) },

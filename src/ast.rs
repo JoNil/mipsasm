@@ -49,10 +49,19 @@ pub enum Instruction {
         rd: Register,
         sa: u32,
     },
+    Vector {
+        op: VTypeOp,
+        vd: VuRegister,
+        vs: VuRegister,
+        vt: VuRegister,
+        de: u32,
+        e: u32,
+    },
 }
 
 type I = ITypeOp;
 type R = RTypeOp;
+type V = VTypeOp;
 
 impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -329,6 +338,16 @@ impl fmt::Display for Instruction {
                     )
                 }
                 e => panic!("{:?} not implemented", e),
+            },
+            Instruction::Vector {
+                op
+            } => match op {
+                V::Vrsq|V::Vrsqh|V::Vrsql=>{
+                    write!(f, "{:7} {}[{}] {}[{}]", op, vd, de, vt, e)
+                }
+                V::Vxor|V::Vsubc|V::Vsar=>{
+                    write!(f, "{:7} {} {} {}[{}]", op, vd, vs, vt, e)
+                }
             },
         }
     }
@@ -729,6 +748,18 @@ pub enum ITypeOp {
     Li,
     Subi,
     Subiu,
+}
+#[derive(Clone, Copy, Debug, Display, EnumString, PartialEq, Eq)]
+#[strum(ascii_case_insensitive)]
+#[strum(serialize_all = "snake_case")]
+pub enum VTypeOp {
+    // VU istructions
+    Vrsq,
+    Vrsqh,
+    Vrsql,
+    Vsar,    
+    Vxor,
+    Vsubc,
 }
 
 #[derive(Clone, Copy, Debug, Display, EnumString, PartialEq, Eq)]
