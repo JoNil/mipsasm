@@ -340,13 +340,57 @@ impl fmt::Display for Instruction {
                 e => panic!("{:?} not implemented", e),
             },
             Instruction::Vector {
-                op
+                op,
+                vd,
+                vs,
+                vt,
+                e,
+                de,
             } => match op {
-                V::Vrsq|V::Vrsqh|V::Vrsql=>{
+                V::Vrsq | V::Vrsqh | V::Vrsql | V::Vrcp | V::Vrcph | V::Vrcpl => {
                     write!(f, "{:7} {}[{}] {}[{}]", op, vd, de, vt, e)
                 }
-                V::Vxor|V::Vsubc|V::Vsar=>{
+                V::Vabs
+                | V::Vadd
+                | V::Vaddc
+                | V::Vand
+                | V::Vch
+                | V::Vcl
+                | V::Vcr
+                | V::Veq
+                | V::Vge
+                | V::Vlt
+                | V::Vmacf
+                | V::Vmacq
+                | V::Vmacu
+                | V::Vmadh
+                | V::Vmadl
+                | V::Vmadm
+                | V::Vmadn
+                | V::Vmov
+                | V::Vmrg
+                | V::Vmudh
+                | V::Vmudl
+                | V::Vmudm
+                | V::Vmudn
+                | V::Vmulf
+                | V::Vmulq
+                | V::Vmulu
+                | V::Vnand
+                | V::Vne
+                | V::Vnor
+                | V::Vnxor
+                | V::Vor
+                | V::Vrndn
+                | V::Vrndp
+                | V::Vsar
+                | V::Vsub
+                | V::Vsubc
+                | V::Vxor => {
                     write!(f, "{:7} {} {} {}[{}]", op, vd, vs, vt, e)
+                }
+                V::Vnop => {
+                    write!(f, "{:7}", "Vnop")
                 }
             },
         }
@@ -451,6 +495,91 @@ impl From<FloatRegister> for Register {
 impl From<Cop0Register> for Register {
     fn from(reg: Cop0Register) -> Self {
         Register::try_from(reg as u32).unwrap()
+    }
+}
+
+#[derive(Clone, Copy, Debug, Display, PartialEq, Eq)]
+#[strum(serialize_all = "snake_case")]
+pub enum VuRegister {
+    V0,
+    V1,
+    V2,
+    V3,
+    V4,
+    V5,
+    V6,
+    V7,
+    V8,
+    V9,
+    V10,
+    V11,
+    V12,
+    V13,
+    V14,
+    V15,
+    V16,
+    V17,
+    V18,
+    V19,
+    V20,
+    V21,
+    V22,
+    V23,
+    V24,
+    V25,
+    V26,
+    V27,
+    V28,
+    V29,
+    V30,
+    V31,
+}
+
+impl VuRegister {
+    pub fn null() -> Self {
+        VuRegister::V0
+    }
+}
+
+impl TryFrom<u32> for VuRegister {
+    type Error = RegParseError;
+
+    fn try_from(reg: u32) -> Result<Self, Self::Error> {
+        match reg {
+            0 => Ok(VuRegister::V0),
+            1 => Ok(VuRegister::V1),
+            2 => Ok(VuRegister::V2),
+            3 => Ok(VuRegister::V3),
+            4 => Ok(VuRegister::V4),
+            5 => Ok(VuRegister::V5),
+            6 => Ok(VuRegister::V6),
+            7 => Ok(VuRegister::V7),
+            8 => Ok(VuRegister::V8),
+            9 => Ok(VuRegister::V9),
+            10 => Ok(VuRegister::V10),
+            11 => Ok(VuRegister::V11),
+            12 => Ok(VuRegister::V12),
+            13 => Ok(VuRegister::V13),
+            14 => Ok(VuRegister::V14),
+            15 => Ok(VuRegister::V15),
+            16 => Ok(VuRegister::V16),
+            17 => Ok(VuRegister::V17),
+            18 => Ok(VuRegister::V18),
+            19 => Ok(VuRegister::V19),
+            20 => Ok(VuRegister::V20),
+            21 => Ok(VuRegister::V21),
+            22 => Ok(VuRegister::V22),
+            23 => Ok(VuRegister::V23),
+            24 => Ok(VuRegister::V24),
+            25 => Ok(VuRegister::V25),
+            26 => Ok(VuRegister::V26),
+            27 => Ok(VuRegister::V27),
+            28 => Ok(VuRegister::V28),
+            29 => Ok(VuRegister::V29),
+            30 => Ok(VuRegister::V30),
+            31 => Ok(VuRegister::V31),
+            e => Err(RegParseError::RegParseError(e.to_string())),
+        }
     }
 }
 
@@ -749,17 +878,56 @@ pub enum ITypeOp {
     Subi,
     Subiu,
 }
+
 #[derive(Clone, Copy, Debug, Display, EnumString, PartialEq, Eq)]
 #[strum(ascii_case_insensitive)]
 #[strum(serialize_all = "snake_case")]
 pub enum VTypeOp {
     // VU istructions
+    Vabs,
+    Vadd,
+    Vaddc,
+    Vand,
+    Vch,
+    Vcl,
+    Vcr,
+    Veq,
+    Vge,
+    Vlt,
+    Vmacf,
+    Vmacq,
+    Vmacu,
+    Vmadh,
+    Vmadl,
+    Vmadm,
+    Vmadn,
+    Vmov,
+    Vmrg,
+    Vmudh,
+    Vmudl,
+    Vmudm,
+    Vmudn,
+    Vmulf,
+    Vmulq,
+    Vmulu,
+    Vnand,
+    Vne,
+    Vnop,
+    Vnor,
+    Vnxor,
+    Vor,
+    Vrcp,
+    Vrcph,
+    Vrcpl,
+    Vrndn,
+    Vrndp,
     Vrsq,
     Vrsqh,
     Vrsql,
-    Vsar,    
-    Vxor,
+    Vsar,
+    Vsub,
     Vsubc,
+    Vxor,
 }
 
 #[derive(Clone, Copy, Debug, Display, EnumString, PartialEq, Eq)]
