@@ -4,6 +4,7 @@ use crate::ast;
 use alloc::{vec, vec::Vec};
 
 type R = ast::Register;
+type Vu = ast::VuRegister;
 
 #[rustfmt::skip]
 pub fn disassemble(bytes: Vec<u32>) -> Vec<ast::Instruction> {
@@ -19,6 +20,11 @@ pub fn disassemble(bytes: Vec<u32>) -> Vec<ast::Instruction> {
         let funct = inst & 0x3F;
         let imm = inst & 0xFFFF;
         let target = ((inst & 0x3FFFFFF) << 2) | 0x80000000;
+        let vd = (inst >> 6)&0x1F;
+        let vs = (inst >> 11)&0x1F;
+        let vt = (inst >> 16)&0x1F;
+        let de = (inst >> 11)&0x1F;
+        let e = (inst >> 21)&0xF;
         
         let i = match op {
             0 => {
@@ -198,6 +204,55 @@ pub fn disassemble(bytes: Vec<u32>) -> Vec<ast::Instruction> {
                     e => panic!("Invalid instruction: {} at: {:x} (ins {inst:x})", e, 4 * index),
                 }
                 (a, b) => panic!("Invalid instruction: {} {} at: {:x} (ins {inst:x})", a, b, 4 * index),
+            }
+            18 => match funct {
+                0b110100 => ast::Instruction::Vector { op: ast::VTypeOp::Vrsq, vd: Vu::try_from(vd).unwrap(), vs: Vu::null(), vt: Vu::try_from(vt).unwrap(), e: e, de: de },
+                0b110110 => ast::Instruction::Vector { op: ast::VTypeOp::Vrsqh, vd: Vu::try_from(vd).unwrap(), vs: Vu::null(), vt: Vu::try_from(vt).unwrap(), e: e, de: de },
+                0b110101 => ast::Instruction::Vector { op: ast::VTypeOp::Vrsql, vd: Vu::try_from(vd).unwrap(), vs: Vu::null(), vt: Vu::try_from(vt).unwrap(), e: e, de: de },                
+                0b110000 => ast::Instruction::Vector { op: ast::VTypeOp::Vrcp, vd: Vu::try_from(vd).unwrap(), vs: Vu::null(), vt: Vu::try_from(vt).unwrap(), e: e, de: de },      
+                0b110010 => ast::Instruction::Vector { op: ast::VTypeOp::Vrcph, vd: Vu::try_from(vd).unwrap(), vs: Vu::null(), vt: Vu::try_from(vt).unwrap(), e: e, de: de },      
+                0b110001 => ast::Instruction::Vector { op: ast::VTypeOp::Vrcpl, vd: Vu::try_from(vd).unwrap(), vs: Vu::null(), vt: Vu::try_from(vt).unwrap(), e: e, de: de },
+                
+                0b010011 => ast::Instruction::Vector { op: ast::VTypeOp::Vabs, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b010000 => ast::Instruction::Vector { op: ast::VTypeOp::Vadd, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b010100 => ast::Instruction::Vector { op: ast::VTypeOp::Vaddc, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b101000 => ast::Instruction::Vector { op: ast::VTypeOp::Vand, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b100101 => ast::Instruction::Vector { op: ast::VTypeOp::Vch, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b100100 => ast::Instruction::Vector { op: ast::VTypeOp::Vcl, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b100110 => ast::Instruction::Vector { op: ast::VTypeOp::Vcr, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b100001 => ast::Instruction::Vector { op: ast::VTypeOp::Veq, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b100011 => ast::Instruction::Vector { op: ast::VTypeOp::Vge, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b100000 => ast::Instruction::Vector { op: ast::VTypeOp::Vlt, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b001000 => ast::Instruction::Vector { op: ast::VTypeOp::Vmacf, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b001011 => ast::Instruction::Vector { op: ast::VTypeOp::Vmacq, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b001001 => ast::Instruction::Vector { op: ast::VTypeOp::Vmacu, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b001111 => ast::Instruction::Vector { op: ast::VTypeOp::Vmadh, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b001100 => ast::Instruction::Vector { op: ast::VTypeOp::Vmadl, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b001101 => ast::Instruction::Vector { op: ast::VTypeOp::Vmadm, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b001110 => ast::Instruction::Vector { op: ast::VTypeOp::Vmadn, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b110011 => ast::Instruction::Vector { op: ast::VTypeOp::Vmov, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b100111 => ast::Instruction::Vector { op: ast::VTypeOp::Vmrg, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b000111 => ast::Instruction::Vector { op: ast::VTypeOp::Vmudh, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b000100 => ast::Instruction::Vector { op: ast::VTypeOp::Vmudl, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b000101 => ast::Instruction::Vector { op: ast::VTypeOp::Vmudm, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b000110 => ast::Instruction::Vector { op: ast::VTypeOp::Vmudn, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b000000 => ast::Instruction::Vector { op: ast::VTypeOp::Vmulf, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b000011 => ast::Instruction::Vector { op: ast::VTypeOp::Vmulq, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b000001 => ast::Instruction::Vector { op: ast::VTypeOp::Vmulu, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b101001 => ast::Instruction::Vector { op: ast::VTypeOp::Vnand, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b100010 => ast::Instruction::Vector { op: ast::VTypeOp::Vne, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b101011 => ast::Instruction::Vector { op: ast::VTypeOp::Vnor, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b101101 => ast::Instruction::Vector { op: ast::VTypeOp::Vnxor, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b101010 => ast::Instruction::Vector { op: ast::VTypeOp::Vor, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b001010 => ast::Instruction::Vector { op: ast::VTypeOp::Vrndn, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b000010 => ast::Instruction::Vector { op: ast::VTypeOp::Vrndp, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b011101 => ast::Instruction::Vector { op: ast::VTypeOp::Vsar, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b010001 => ast::Instruction::Vector { op: ast::VTypeOp::Vsub, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b010101 => ast::Instruction::Vector { op: ast::VTypeOp::Vsubc, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                0b101100 => ast::Instruction::Vector { op: ast::VTypeOp::Vxor, vd: Vu::try_from(vd).unwrap(), vs: Vu::try_from(vs).unwrap(), vt: Vu::try_from(vt).unwrap(), e: e, de: 0 },
+                
+                0b110111 => ast::Instruction::Vector { op: ast::VTypeOp::Vnop, vd: Vu::null(), vs: Vu::null(), vt: Vu::null(), e: 0, de: 0 },
+                e => panic!("Invalid VU instruction: {} at: {:x} (ins {inst:x})", e, 4 * index),
             }
             20 => ast::Instruction::Immediate { op: ast::ITypeOp::Beql, rs: R::try_from(rs).unwrap(), rt: R::try_from(rt).unwrap(), imm: ast::Immediate(imm as u16) },
             21 => ast::Instruction::Immediate { op: ast::ITypeOp::Bnel, rs: R::try_from(rs).unwrap(), rt: R::try_from(rt).unwrap(), imm: ast::Immediate(imm as u16) },
